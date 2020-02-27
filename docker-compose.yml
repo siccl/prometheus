@@ -1,0 +1,43 @@
+version: '3.5'
+volumes:
+    prometheus_data: {}
+    grafana_data: {}
+    grafana_config: ()
+services:
+  prometheus:
+    container_name: prometheus
+    image: prom/prometheus:v2.15.2
+    volumes:
+      - ./etc/:/etc/prometheus/
+      - prometheus_data:/data
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    ports:
+      - '8200:9090'
+    restart: always
+    expose:
+      - '9090'
+  grafana:
+    container_name: grafana
+    image: grafana/grafana:latest
+    restart: always
+    ports:
+      - '8300:3000'
+    depends_on:
+      - prometheus
+    expose:
+      - '3000'
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - grafana_config:/etc/grafana/
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f localhost:3000/api/health && echo 'ready'"]
+      interval: 10s
+      retries: 30
+networks:
+  default:
+    external:
+      name: scripts_default
